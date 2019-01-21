@@ -2,17 +2,16 @@ import pygame, sys, random
 from pygame.locals import *
 import pygame.event
 
+
+#faire varier la série aléatoire
+random.seed()
+ 
 #initialisation de pygame
 pygame.init()
 
 #déterminer la mesure de la fenêtre
 fenetreLargeur=800
 fenetreHauteur=600
-
-#valeurs RGB pour la couleur
-ROUGE=(255,0,0)
-VERT=(0,255,0)
-BLEU=(0,0,255)
 
 #définir variable couleur
 couleur=(255,255,255)
@@ -22,14 +21,30 @@ carre_cote=20
 carre_x=fenetreLargeur/2-carre_cote/2
 carre_y	=fenetreHauteur/2-carre_cote/2
 
-#initialiser la direction de départ de manière aléatoire
-dir_x=random.choice([-1,1])
-dir_y=random.choice([-1,1])
+#définir variables direction
+dir_x=0
+dir_y=0
+
+#définir variables accélération
+v_x=0
+v_y=0
+
 
 #créer la fenêtre
 fenetre=pygame.display.set_mode((fenetreLargeur,fenetreHauteur))
 # donner un titre à la fenêtre
 pygame.display.set_caption("Faire bouger des formes !")
+
+def direction_aleatoire():
+	dir_x=random.choice([-1,1])
+	dir_y=random.choice([-1,1])
+	return dir_x,dir_y
+	
+
+def acceleration_aleatoire():
+	v_x=random.choice([0.1,0.3,0.5,0.7])
+	v_y=random.choice([0.1,0.3,0.5,0.7])
+	return v_x,v_y
 
 def couleur_aleatoire():
 	rouge=random.randint(0,255)
@@ -40,6 +55,19 @@ def couleur_aleatoire():
 
 
 couleur=couleur_aleatoire()
+dir_x,dir_y=direction_aleatoire()
+v_x,v_y=acceleration_aleatoire()
+#l'accélération doit aller dans le même sens que la direction
+if dir_x>0:
+	v_x=abs(v_x)
+else:
+	v_x=-v_x
+if dir_y>0:
+	v_y=abs(v_y)
+else:
+	v_y=-v_y
+
+
 
 while True:
 	#tout effacer en remplissant l'écran de noir
@@ -51,53 +79,53 @@ while True:
 	#déplacer le carré
 	carre_x+=dir_x
 	carre_y+=dir_y
-
-	
+	#accélérer le déplacement pour la prochaine fois
+	dir_x+=v_x
+	dir_y+=v_y
 
 	#vérifie si le carré ne sort pas de la fenêtre
 	if (carre_x+carre_cote > fenetreLargeur):
-		#replacer le carré dans la fenêtre
+		#replacer le carré dans la fenêtre		
 		carre_x=fenetreLargeur-carre_cote
-		#si la coordonnée x sort de la fenêtre, on inverse la direction x
-		dir_x=-dir_x
-		#pour introduire un peu de variation, la direction y est changée aléatoirement
-		dir_y=random.choice([dir_y,-dir_y])
-		#changer la couleur de manière aléatoire
+		#inverser la direction x		
+		dir_x=-1
+		#pour plus de variations, la direction y est redéterminée aléatoirement
+		valeur_inutile,dir_y=direction_aleatoire()
+		#les accélérations sont redéterminées aléatoirement
+		v_x,v_y=acceleration_aleatoire()
+		#v_x doit suivre dir_x (négatif)
+		v_x=-v_x
+		#couleur refixée aléatoirement
 		couleur=couleur_aleatoire()
+		continue 
+
+	elif (carre_x<0):
+		carre_x=0		
+		dir_x=1
+		valeur_inutile,dir_y=direction_aleatoire()
+		v_x,v_y=acceleration_aleatoire()
+		couleur=couleur_aleatoire() 
+	
 		continue
 
-	elif (carre_x < 0):
-		#replacer le carré dans la fenêtre
-		carre_x=0
-		#si la coordonnée x sort de la fenêtre, on inverse la direction x
-		dir_x=-dir_x
-		#pour introduire un peu de variation, la direction y est changée aléatoirement
-		dir_y=random.choice([dir_y,-dir_y])
-		#changer la couleur de manière aléatoire
-		couleur=couleur_aleatoire()
-		continue
-
-		
+			
 	if (carre_y+carre_cote > fenetreHauteur):
-		#replacer le carré dans la fenêtre
-		carre_y=fenetreHauteur-carre_cote
-		#si la coordonnée y sort de la fenêtre, on inverse la direction y
-		dir_y=-dir_y
-		#pour introduire un peu de variation, la direction x est changée aléatoirement
-		dir_y=random.choice([dir_y,-dir_y])
-		#changer la couleur de manière aléatoire
+		carre_y=fenetreHauteur-carre_cote	
+		dir_y=-1
+		dir_x,valeur_inutile=direction_aleatoire()
+		v_x,v_y=acceleration_aleatoire()
+		v_y=-v_y
 		couleur=couleur_aleatoire()
-		continue
+		
 
-	elif (carre_y < 0):
-		#replacer le carré dans la fenêtre
-		carre_y=0
-		#si la coordonnée y sort de la fenêtre, on inverse la direction y
-		dir_y=-dir_y
-		#pour introduire un peu de variation, la direction x est changée aléatoirement
-		dir_y=random.choice([dir_y,-dir_y])
-		#changer la couleur de manière aléatoire
+		continue
+	elif (carre_y<0):
+		carre_y=0		
+		dir_y=1
+		dir_x,valeur_inutile=direction_aleatoire()
+		v_x,v_y=acceleration_aleatoire()
 		couleur=couleur_aleatoire()
+
 		continue
 
 

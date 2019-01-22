@@ -11,27 +11,30 @@ hauteurEcran=600
 
 #créer fenêtre
 ecran=pygame.display.set_mode((largeurEcran,hauteurEcran))
-pygame.display.set_caption("Pygame test clavier")
+pygame.display.set_caption("Pygame test clavier - raquette")
 
 #variables carré
 #taille côté
-tailleJoueur=20
+tailleJoueurX=80
+tailleJoueurY=20
 #couleur
 couleur=(255,0,0)
 #position de départ X joueur
-joueurX=(largeurEcran/2)-(tailleJoueur/2)
+joueurX=(largeurEcran/2)-(tailleJoueurX/2)
 #position de départ Y joueur
-joueurY=(hauteurEcran/2)-(tailleJoueur/2)
+joueurY=hauteurEcran-tailleJoueurY-10
 #deplacement X
 deplacementX=1.0
 #deplacement Y
-deplacementY=1.0
+deplacementY=0.0
+#vitesse déplacement
+vitesse=1.0
+vitesseMaximum=10.0
 
 #variables clavier
 gauche=False
 droite=False
-haut=False
-bas=False
+
 
 
 def deplacer():
@@ -40,38 +43,34 @@ def deplacer():
 	
 	#déplacement à gauche
 	if gauche:
-		joueurX-=deplacementX
+		#si on se déplace vers la droite, on réinitialise la vitesse au minimum et on inverse la direction
+		if deplacementX>0:
+			deplacementX=-vitesse
+		#se déplacer à gauche 
+		joueurX+=deplacementX
 		#si nouvelle coordonnée X sort à gauche de l'écran, réinitialiser à zéro
 		if joueurX<0:	
 			joueurX=0
-		
+			
+ 
+
 	#déplacement à droite
 	if droite:
-		#se déplacer à droite
+		#si on se déplace vers la gauche, on réinitialise la vitesse et on inverse la direction
+		if deplacementX<0:
+			deplacementX=vitesse
+		#se déplacer à droite 
 		joueurX+=deplacementX
-		# vérifier qu'on ne sort pas à droite de l'écran 
-		if joueurX+tailleJoueur>largeurEcran:
-			joueurX=largeurEcran-tailleJoueur
+		# si on sort à droite de l'écran, 
+		if joueurX+tailleJoueurX>largeurEcran:
+			joueurX=largeurEcran-tailleJoueurX
 
-	#déplacement vers le bas
-	if bas:
-		#se déplacer vers le bas
-		joueurY+=deplacementY
-		# vérifier qu'on ne sort pas en bas de l'écran 
-		if joueurY+tailleJoueur>hauteurEcran:
-			joueurY=hauteurEcran-tailleJoueur
+		
+	#accélération jusqu'à atteindre la vitesse maximum
+	if(gauche or droite):
+		if (abs(deplacementX)<abs(vitesseMaximum)):
+			deplacementX*=1.005
 
-	#déplacement vers le haut
-	if haut:
-		#se déplacer vers le haut
-		joueurY-=deplacementY
-		# vérifier qu'on ne sort pas en haut de l'écran 
-		if joueurY<0:
-			joueurY=0
-
-	
-	
-	
 
 def quitterJeu():
 	"quitter le jeu"
@@ -85,7 +84,7 @@ while True:
 	ecran.fill((0,0,0))
 
 	#dessiner joueur
-	pygame.draw.rect(ecran,couleur,(joueurX,joueurY,tailleJoueur,tailleJoueur))
+	pygame.draw.rect(ecran,couleur,(joueurX,joueurY,tailleJoueurX,tailleJoueurY))
 
 	#traiter les événements
 	for event in pygame.event.get():
@@ -94,22 +93,16 @@ while True:
 				droite=True
 			if event.key==pygame.K_LEFT:
 				gauche=True
-			if event.key==pygame.K_UP:
-				haut=True
-			if event.key==pygame.K_DOWN:
-				bas=True
 			if event.key==pygame.K_ESCAPE:
 				quitterJeu()
 
 		if event.type==pygame.KEYUP:
 			if event.key==pygame.K_RIGHT:
 				droite=False
+				deplacementX=vitesse
 			if event.key==pygame.K_LEFT:
 				gauche=False
-			if event.key==pygame.K_UP:
-				haut=False
-			if event.key==pygame.K_DOWN:
-				bas=False
+				deplacementX=vitesse
 					
 		
 		if event.type==QUIT:

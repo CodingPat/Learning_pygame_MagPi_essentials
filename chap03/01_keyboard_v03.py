@@ -21,56 +21,73 @@ couleur=(255,0,0)
 #position de départ X joueur
 joueurX=(largeurEcran/2)-(tailleJoueur/2)
 #position de départ Y joueur
-joueurY=(hauteurEcran/2)-(tailleJoueur/2)
+joueurY=hauteurEcran-tailleJoueur
 #deplacement X
 deplacementX=1.0
 #deplacement Y
-deplacementY=1.0
+deplacementY=0.0
+#hauteur d'un saut
+hauteurSaut=10.0
+#vitesse déplacement
+vitesse=1.0
+vitesseMaximum=10.0
+#gravité
+gravite=1.0
 
 #variables clavier
 gauche=False
 droite=False
-haut=False
-bas=False
+saut=False
 
 
 def deplacer():
 	"mise à jour du déplacement"
-	global joueurX,joueurY,deplacementX,deplacementY
+	global joueurX,joueurY,deplacementX,deplacementY,saut,gravite
 	
 	#déplacement à gauche
 	if gauche:
-		joueurX-=deplacementX
+		#si on se déplace vers la droite, on réinitialise la vitesse au minimum et on inverse la direction
+		if deplacementX>0:
+			deplacementX=-vitesse
+		#se déplacer à gauche 
+		joueurX+=deplacementX
 		#si nouvelle coordonnée X sort à gauche de l'écran, réinitialiser à zéro
 		if joueurX<0:	
 			joueurX=0
-		
+			
+ 
+
 	#déplacement à droite
 	if droite:
-		#se déplacer à droite
+		#si on se déplace vers la gauche, on réinitialise la vitesse et on inverse la direction
+		if deplacementX<0:
+			deplacementX=vitesse
+		#se déplacer à droite 
 		joueurX+=deplacementX
-		# vérifier qu'on ne sort pas à droite de l'écran 
+		# si on sort à droite de l'écran, 
 		if joueurX+tailleJoueur>largeurEcran:
 			joueurX=largeurEcran-tailleJoueur
 
-	#déplacement vers le bas
-	if bas:
-		#se déplacer vers le bas
-		joueurY+=deplacementY
-		# vérifier qu'on ne sort pas en bas de l'écran 
-		if joueurY+tailleJoueur>hauteurEcran:
-			joueurY=hauteurEcran-tailleJoueur
+		
+	#accélération jusqu'à atteindre la vitesse maximum
+	if(gauche or droite) and not(saut):
+		if (abs(deplacementX)<abs(vitesseMaximum)):
+			deplacementX*=1.005
 
-	#déplacement vers le haut
-	if haut:
-		#se déplacer vers le haut
-		joueurY-=deplacementY
-		# vérifier qu'on ne sort pas en haut de l'écran 
-		if joueurY<0:
-			joueurY=0
 
+	#déplacement Y
+	joueurY-=deplacementY	
 	
-	
+	#saut effet de gravité (pour ramener au sol)
+	if joueurY <hauteurEcran-tailleJoueur:
+		joueurY+=gravite
+		gravite*=1.1
+	else:
+		joueurY=hauteurEcran-tailleJoueur
+		deplacementY=0
+		gravite=1.0
+		saut=False
+
 	
 
 def quitterJeu():
@@ -95,21 +112,19 @@ while True:
 			if event.key==pygame.K_LEFT:
 				gauche=True
 			if event.key==pygame.K_UP:
-				haut=True
-			if event.key==pygame.K_DOWN:
-				bas=True
+				if not saut:
+					saut=True
+					deplacementY+=hauteurSaut
 			if event.key==pygame.K_ESCAPE:
 				quitterJeu()
 
 		if event.type==pygame.KEYUP:
 			if event.key==pygame.K_RIGHT:
 				droite=False
+				deplacementX=vitesse
 			if event.key==pygame.K_LEFT:
 				gauche=False
-			if event.key==pygame.K_UP:
-				haut=False
-			if event.key==pygame.K_DOWN:
-				bas=False
+				deplacementX=vitesse
 					
 		
 		if event.type==QUIT:

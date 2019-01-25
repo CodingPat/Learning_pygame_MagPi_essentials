@@ -9,9 +9,9 @@ title_image=pygame.image.load("images/title_screen.png")
 gameover_image=pygame.image.load("images/gameover.png")
 
 largeurEcran=800
-hauteurEcran=600
+largeurEcran=600
 
-ecran=pygame.display.set_mode((largeurEcran,hauteurEcran))
+ecran=pygame.display.set_mode((largeurEcran,largeurEcran))
 
 pygame.display.set_caption("Traversez les platteformes pour ne pas vous faire écraser au plafond !")
 
@@ -30,13 +30,14 @@ tempsDernierePlatteforme=0
 platteformesTraversees=-1
 couleurPlatteforme=(0,0,255)
 
-chute=False
+tombe=False
+plafondPlatteformeTrouve=False
 
 temps_precedent=0
 temps=0
 
 joueur={
-"x":largeurEcran/2,
+"x":int(largeurEcran/2),
 "y":0,
 "longueur":10,
 "largeur":25,
@@ -51,6 +52,38 @@ def dessiner_joueur():
 
 
 def deplacer_joueur():
+
+	global platteformesTraversees,tombe
+
+	if ecran.get_at((int(joueur["x"]),int(joueur["y"]+joueur["largeur"])))==(0,0,0,255):
+		joueurSurPlatteformeGauche=False
+	if ecran.get_at((int(joueur["x"]+joueur["largeur"]),int(joueur["y"]+joueur["largeur"])))==(0,0,0,255):
+		joueurSurPlatteformeDroite=False
+
+	if not(joueurSurPlatteformeGauche or joueurSurPlatteformeDroite):
+	#joueur dans un trou, chute
+		joueur["y"]+=joueur["vitesseY"]
+		if joueur["y"]+joueur["largeur"]>largeurEcran:
+			joueur["y"]=largeurEcran-joueur["largeur"]
+
+		if not(tombe):
+			tombe=True
+			platteformesTraversees+=1
+	else:
+	#joueur sur platteforme, le positionner au-dessus de la platteforme
+		plafondPlatteformeTrouve=False
+		tombe=False
+		#décrémenter y jusqu'à ce que l'on retombe sur une couleur d'arrière-plan
+		#ou que l'on sorte de l'écran		
+		while (not(plafondPlatteformeTrouve) and joueur["y"]>0):
+			player["y"]-=1
+			if ecran.get_at((int(joueur["x"]),int(joueur["y"]+joueur["largeur"])))==(0,0,0,255):
+				plafondPlatteformeTrouve=True
+		#si on sort de l'écran, on met fin au jeu
+		if joueur["y"]<0:
+			gameover()
+		
+									
 	if gauche:
 		joueur["x"]-=joueur["vitesseX"]
 		if joueur["x"]<0:
@@ -65,7 +98,7 @@ def deplacer_joueur():
 def creer_platteforme():
 	global tempsDernierePlatteforme,delaiPlatteforme
 	
-	platteformeY=hauteurEcran
+	platteformeY=largeurEcran
 	positionTrou=random.randint(0,largeurEcran-40)
 
 	platteformes.append({"pos":[0,platteformeY],"trou":positionTrou})

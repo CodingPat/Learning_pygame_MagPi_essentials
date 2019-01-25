@@ -15,6 +15,7 @@ ecran=pygame.display.set_mode((largeurEcran,hauteurEcran))
 
 pygame.display.set_caption("Traversez les platteformes pour ne pas vous faire écraser au plafond !")
 
+#variables globales
 gauche=False
 droite=False
 
@@ -23,10 +24,11 @@ jeuTermine=False
 moment_demarrage=0
 
 platteformes=[]
-vitesse_platteformes=3
-delai_platteforme=2000
-temps_derniere_platteforme=0
-platteformes_traversees=-1
+vitessePlatteforme=1
+delaiPlatteforme=2000
+tempsDernierePlatteforme=0
+platteformesTraversees=-1
+couleurPlatteforme=(0,0,255)
 
 chute=False
 
@@ -38,7 +40,8 @@ joueur={
 "y":0,
 "longueur":10,
 "largeur":25,
-"vitessey":5,
+"vitesseY":5,
+"vitesseX":5,
 "couleur":(255,0,0)
 }
 
@@ -48,16 +51,42 @@ def dessiner_joueur():
 
 
 def deplacer_joueur():
-	pass
+	if gauche:
+		joueur["x"]-=joueur["vitesseX"]
+		if joueur["x"]<0:
+			joueur["x"]=0
+
+	if droite:
+		joueur["x"]+=joueur["vitesseX"]
+		if joueur["x"]>largeurEcran:
+			joueur["x"]=largeurEcran-joueur["longueur"]
+
 
 def creer_platteforme():
-	pass
+	global tempsDernierePlatteforme,delaiPlatteforme
+	
+	platteformeY=hauteurEcran
+	positionTrou=random.randint(0,largeurEcran-40)
+
+	platteformes.append({"pos":[0,platteformeY],"trou":positionTrou})
+
+	tempsDernierPlatteforme=pygame.time.get_ticks()
+
+	
 
 def deplacer_platteformes():
-	pass
+	for idx,platteforme in enumerate(platteformes):
+		platteforme["pos"][1]-=vitessePlatteforme
+		if platteforme["pos"][0]<-10:
+			platteformes.pop(idx)
 
 def dessiner_platteformes():
-	pass
+	for platteforme in platteformes:
+		pygame.draw.rect(ecran,couleurPlatteforme,(platteforme["pos"][0],\
+		platteforme["pos"][1],largeurEcran,10))
+		pygame.draw.rect(ecran,(0,0,0),(platteforme["trou"],\
+		platteforme["pos"][1],40,10))
+
 
 def gameover():
 	pass
@@ -99,7 +128,6 @@ while True:
 			if event.key==pygame.K_RIGHT:
 				droite=False
 			if event.key==pygame.K_SPACE:
-				print("barre espace relâchée")
 				if jeuDemarre==False:
 					redemarrerJeu()
 					jeuDemarre=True
@@ -125,9 +153,9 @@ while True:
 
 			
 	temps=pygame.time.get_ticks()				
-	if temps-temps_derniere_platteforme>delai_platteforme:
+	if temps-tempsDernierePlatteforme>delaiPlatteforme:
 		creer_platteforme()
-		temps_derniere_platteforme=temps
+		tempsDernierePlatteforme=temps
 
 	pygame.display.update()
 

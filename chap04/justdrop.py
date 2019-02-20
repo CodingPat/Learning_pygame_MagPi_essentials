@@ -5,7 +5,7 @@ import  pygame.time
 
 
 class Joueur:
-    def __init__(self,x,y,dx,dy,largeur,hauteur,couleur,tombe=False):
+    def __init__(self,x,y,dx,dy,largeur,hauteur,couleur,moteur,tombe=False):
         self.x=x
         self.y=y
         self.dx=dx
@@ -13,17 +13,18 @@ class Joueur:
         self.largeur=largeur
         self.hauteur=hauteur
         self.couleur=couleur
+        self.moteur=moteur
         self.direction=0
         self.tombe=tombe
         
+        
 
                 
-    def dessiner(self,ecran):
-        pygame.draw.rect(ecran,self.couleur,(self.x,self.y,self.largeur,self.hauteur))
+    def dessiner(self):
+        pygame.draw.rect(self.moteur.ecran,self.couleur,(self.x,self.y,self.largeur,self.hauteur))
 
-    def deplacer(self,ecran,moteur):
-        check_y=0 #coordonnée y à laquelle on vérifier la couleur
-        
+    def deplacer(self):
+                
         #debug      
         #print("avant déplacement : x={} y={}".format(self.x,self.y))
         
@@ -34,8 +35,16 @@ class Joueur:
         #print("avant check color : x={} y={}".format(self.x,self.y))
     
         #avant de vérifier couleur en-dessous du joueur, vérifier que l'on n'a pas atteint le fond de l'écran
-        if self.y+self.hauteur<ecran.get_height():
-            if (ecran.get_at((self.x,check_y))==(0,0,0,255) and ecran.get_at((self.x+self.largeur,check_y))==(0,0,0,255)):
+        if self.y+self.hauteur<self.moteur.ecran.get_height():
+            print(self.x,self.y)
+            print(self.x,self.y+self.hauteur)
+            print(self.x+self.largeur,self.y+self.hauteur)
+            print(self.moteur.ecran.get_at((self.x,self.y+self.hauteur)))
+            print(self.moteur.ecran.get_at((self.x+self.largeur,self.y+self.hauteur)))
+            print(self.moteur.ecran.get_at((self.x,self.y)))
+            print(self.moteur.ecran.get_at((self.x+1,self.y+1)))
+            
+            if (self.moteur.ecran.get_at((self.x,self.y+self.hauteur))==(0,0,0,255) and self.moteur.ecran.get_at((self.x+self.largeur,self.y+self.hauteur))==(0,0,0,255)):
                 self.tombe=True
             else :
                 self.tombe=False
@@ -55,13 +64,13 @@ class Joueur:
         if self.y<0:
             moteur.gameover()
             
-        if self.y+self.hauteur > ecran.get_height():
-            self.y=ecran.get_height()-self.hauteur
+        if self.y+self.hauteur > self.moteur.ecran.get_height():
+            self.y=self.moteur.ecran.get_height()-self.hauteur
             self.tombe=False
     
         #vérifier si limites écran
-        if (self.x+self.largeur)>ecran.get_width():
-            self.x=ecran.get_width()-self.largeur
+        if (self.x+self.largeur)>self.moteur.ecran.get_width():
+            self.x=self.moteur.ecran.get_width()-self.largeur
         elif self.x <0:
             self.x=0
 
@@ -73,38 +82,40 @@ class Joueur:
 
 class Platteforme:
     #variables de classe
-    platteformes=[]
     dernierePlatteformeA=0
     delaiPlatteforme=5
     
-    def __init__(self,vitesse,couleur):
+    def __init__(self,x,y,vitesse,couleur,moteur):
         self.vitesse=vitesse
         self.couleur=couleur
+        self.x=x
+        self.y=y
+        self.positionTrou=0
+        self.moteur=moteur
         self.creer_platteforme()
-        
         
 
     def deplacer_platteformes(self):
-        for idx,platteforme in enumerate(platteformes):
-            platteforme["pos"][1]-=vitessePlatteforme
-        if platteforme["pos"][0]<-10:
-            platteformes.pop(idx)
-
-    def dessiner_platteformes(self):
-        for platteforme in platteformes:
-            pygame.draw.rect(ecran,couleurPlatteforme,(platteforme["pos"][0],\
-            platteforme["pos"][1],hauteurEcran,10))
-            pygame.draw.rect(ecran,(0,0,0),(platteforme["trou"],\
-            platteforme["pos"][1],40,10))
+        for idx,platteforme in enumerate(self.moteur.platteformes):
+            self.y-=self.vitesse
+        if self.x<-10:
+            self.moteur.platteformes.pop(idx)
+    
+            
+    def dessiner(self):
+        
+        pygame.draw.rect(self.moteur.ecran,self.couleur,(self.x,\
+            self.y,self.moteur.ecran.get_width(),10))
+        pygame.draw.rect(self.moteur.ecran,(0,0,0),(self.positionTrou,\
+            self.y,40,10))
 
     def creer_platteforme(self):
                        
-            platteformeY=hauteurEcran
-            positionTrou=random.randint(0,hauteurEcran-40)
+        self.positionTrou=random.randint(0,hauteurEcran-40)
 
-            platteformes.append({"pos":[0,platteformeY],"trou":positionTrou})
+        self.moteur.platteformes.append(self)
 
-            dernierePlatteformeA=pygame.time.get_ticks()
+        Platteforme.dernierePlatteformeA=pygame.time.get_ticks()
 
 
 
@@ -126,8 +137,8 @@ class MoteurJeu:
         self.ecran=pygame.display.set_mode((self.largeurEcran,self.hauteurEcran))
         pygame.display.set_caption("Justdrop !")
         self.joueur=Joueur(x=int(self.largeurEcran/2),y=int(self.hauteurEcran/2),dx=1,dy=1,\
-                     largeur=25,hauteur=40,couleur=(255,0,0),tombe=False)
-        platteforme=Platteforme(vitesse=5,couleur=(0,255,0))
+                     largeur=25,hauteur=40,couleur=(255,0,0),moteur=self,tombe=False)
+        platteforme=Platteforme(vitesse=5,x=0,y=int(self.hauteurEcran*2/3),couleur=(0,255,0),moteur=self)
 
             
 
@@ -176,12 +187,16 @@ class MoteurJeu:
                 if event.type==pygame.QUIT:
                     self.quitterJeu()
 
-            self.joueur.deplacer(self.ecran,self)
-            self.joueur.dessiner(self.ecran)
+            self.joueur.deplacer()
+            self.joueur.dessiner()
 
-            '''       
-            #to do : gérer platteformes
-
+                   
+            #gérer platteformes
+            for platteforme in self.platteformes:
+                platteforme.dessiner()
+                
+            
+            '''
             #to do : control fps       
             temps=pygame.time.get_ticks()               
             if temps-tempsDernierePlatteforme>delaiPlatteforme:

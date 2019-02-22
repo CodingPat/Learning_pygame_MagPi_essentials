@@ -16,12 +16,9 @@ class Joueur:
         self.moteur=moteur
         self.direction=0
         self.tombe=tombe
-        
-        
-
                 
     def dessiner(self):
-        pygame.draw.rect(self.moteur.ecran,self.couleur,(self.x,self.y,self.largeur,self.hauteur))
+        pygame.draw.rect(ecran,self.couleur,(self.x,self.y,self.largeur,self.hauteur))
 
     def deplacer(self):
                 
@@ -35,42 +32,40 @@ class Joueur:
         #print("avant check color : x={} y={}".format(self.x,self.y))
     
         #avant de vérifier couleur en-dessous du joueur, vérifier que l'on n'a pas atteint le fond de l'écran
-        if self.y+self.hauteur<self.moteur.ecran.get_height():
-            print(self.x,self.y)
-            print(self.x,self.y+self.hauteur)
-            print(self.x+self.largeur,self.y+self.hauteur)
-            print(self.moteur.ecran.get_at((self.x,self.y+self.hauteur)))
-            print(self.moteur.ecran.get_at((self.x+self.largeur,self.y+self.hauteur)))
-            print(self.moteur.ecran.get_at((self.x,self.y)))
-            print(self.moteur.ecran.get_at((self.x+1,self.y+1)))
+        if self.y+self.hauteur<hauteurEcran:
             
-            if (self.moteur.ecran.get_at((self.x,self.y+self.hauteur))==(0,0,0,255) and self.moteur.ecran.get_at((self.x+self.largeur,self.y+self.hauteur))==(0,0,0,255)):
+            if (ecran.get_at((self.x,self.y+self.hauteur))==(0,0,0,255) and ecran.get_at((self.x+self.largeur,self.y+self.hauteur))==(0,0,0,255)):
                 self.tombe=True
             else :
                 self.tombe=False
+                #se positionner sur le dessus de la platteforme
+                try:
+                    while (ecran.get_at((self.x,self.y+self.hauteur-1))==couleurPlatteforme or ecran.get_at((self.x+self.largeur-1,self.y+self.hauteur-1))==couleurPlatteforme):
+                        self.y=self.y-1
+                except IndexError:
+                    print("{},{}".format(self.x,self.y))
+                       
         
         
         #si n'est pas en train de tomber, tenir compte de la direction
                
         if not(self.tombe):
-            #print("on ne tombe pas !")
             self.x+=self.direction*self.dx
         #si tombe, incrémenter y
         else:
-            #print(":( on tombe ...")
             self.y+=self.dy
         
         #si on sort de l'écran, on met fin au jeu
         if self.y<0:
             moteur.gameover()
             
-        if self.y+self.hauteur > self.moteur.ecran.get_height():
-            self.y=self.moteur.ecran.get_height()-self.hauteur
+        if self.y+self.hauteur > hauteurEcran:
+            self.y=hauteurEcran-self.hauteur
             self.tombe=False
     
         #vérifier si limites écran
-        if (self.x+self.largeur)>self.moteur.ecran.get_width():
-            self.x=self.moteur.ecran.get_width()-self.largeur
+        if (self.x+self.largeur)>largeurEcran:
+            self.x=largeurEcran-self.largeur
         elif self.x <0:
             self.x=0
 
@@ -90,30 +85,25 @@ class Platteforme:
         self.couleur=couleur
         self.x=x
         self.y=y
+        self.hauteur=10
         self.positionTrou=0
         self.moteur=moteur
         self.creer_platteforme()
         
 
-    def deplacer_platteformes(self):
-        for idx,platteforme in enumerate(self.moteur.platteformes):
-            self.y-=self.vitesse
-        if self.x<-10:
-            self.moteur.platteformes.pop(idx)
-    
-            
+               
     def dessiner(self):
         
-        pygame.draw.rect(self.moteur.ecran,self.couleur,(self.x,\
-            self.y,self.moteur.ecran.get_width(),10))
-        pygame.draw.rect(self.moteur.ecran,(0,0,0),(self.positionTrou,\
-            self.y,40,10))
+            
+        pygame.draw.rect(ecran,self.couleur,(self.x,\
+            self.y,largeurEcran,self.hauteur))
+        
+        pygame.draw.rect(ecran,(0,0,0),(self.positionTrou,\
+            self.y,40,self.hauteur))
 
     def creer_platteforme(self):
                        
         self.positionTrou=random.randint(0,hauteurEcran-40)
-
-        self.moteur.platteformes.append(self)
 
         Platteforme.dernierePlatteformeA=pygame.time.get_ticks()
 
@@ -121,32 +111,28 @@ class Platteforme:
 
 class MoteurJeu:
     
-    def __init__(self,largeurEcran,hauteurEcran):
-        self.largeurEcran=largeurEcran
-        self.hauteurEcran=hauteurEcran
-        self.ecran=None
+    def __init__(self):
+        #self.largeurEcran=largeurEcran
+        #self.hauteurEcran=hauteurEcran
+        #self.ecran=None
         self.joueur=None
         self.platteformes=[]
-        self.temps_demarrage=0
-        self.temps_precedent=0
         self.continuerJeu=True
+        self.demarrageA=0
+        self.derniereMAJEcranA=0
+        self.dernierePlatteformeA=0
 
         
     def initialisation_jeu(self):
-        pygame.init()
-        self.ecran=pygame.display.set_mode((self.largeurEcran,self.hauteurEcran))
-        pygame.display.set_caption("Justdrop !")
-        self.joueur=Joueur(x=int(self.largeurEcran/2),y=int(self.hauteurEcran/2),dx=1,dy=1,\
+        self.joueur=Joueur(x=int(largeurEcran/2),y=int(hauteurEcran/2),dx=5,dy=5,\
                      largeur=25,hauteur=40,couleur=(255,0,0),moteur=self,tombe=False)
-        platteforme=Platteforme(vitesse=5,x=0,y=int(self.hauteurEcran*2/3),couleur=(0,255,0),moteur=self)
-
-            
-
-    def demarrerJeu(self):
-        joueur["x"]=hauteurEcran/2
-        joueur["y"]=0
-        self.temps_demarrage=pygame.time.get_ticks()
-        
+        platteforme=Platteforme(vitesse=2,x=0,y=int(hauteurEcran*2/3),couleur=couleurPlatteforme,moteur=self)
+        self.platteformes.append(platteforme)
+        self.demarrageA=pygame.time.get_ticks()
+        self.dernierePlatteformeA=pygame.time.get_ticks()    
+        self.clock=pygame.time.Clock()
+        self.tempsPasse=0
+           
 
 
     def quitterJeu(self):
@@ -161,7 +147,7 @@ class MoteurJeu:
 
         while self.continuerJeu:
                 
-            self.ecran.fill((0,0,0))
+            ecran.fill((0,0,0))
             
 
             for event in pygame.event.get():
@@ -187,21 +173,33 @@ class MoteurJeu:
                 if event.type==pygame.QUIT:
                     self.quitterJeu()
 
-            self.joueur.deplacer()
-            self.joueur.dessiner()
 
                    
             #gérer platteformes
+            
+            #déplacer platteformes
+            for idx,platteforme in enumerate(self.platteformes):
+                platteforme.y-=platteforme.vitesse
+                if platteforme.y<-10:
+                    self.platteformes.pop(idx)
+                
             for platteforme in self.platteformes:
                 platteforme.dessiner()
+            
+            #gérer joueur APRES platteformes (ne traverse pas platteforme sur base couleur)
+            self.joueur.deplacer()
+            self.joueur.dessiner()
                 
             
+            
+            
             '''
+            #to do : création de nouvelles platteformes en fonction du temps écoulé
+            '''
+            
+            
             #to do : control fps       
-            temps=pygame.time.get_ticks()               
-            if temps-tempsDernierePlatteforme>delaiPlatteforme:
-                pass
-            '''
+            self.tempsPasse=self.clock.tick(60)
             
             pygame.display.update()
 
@@ -210,9 +208,17 @@ class MoteurJeu:
 #démarrage du module
 
 if __name__=="__main__":
+    
     largeurEcran=800
     hauteurEcran=600
-    monMoteurJeu=MoteurJeu(800,600)        
+    couleurPlatteforme=(0,0,255)
+    
+    pygame.init()
+    
+    ecran=pygame.display.set_mode((largeurEcran,hauteurEcran))
+    pygame.display.set_caption("Justdrop !")
+    
+    monMoteurJeu=MoteurJeu()        
     monMoteurJeu.initialisation_jeu()
     monMoteurJeu.boucle_principale()
 

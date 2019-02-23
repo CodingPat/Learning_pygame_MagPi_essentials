@@ -1,4 +1,4 @@
-import pygame, sys, random
+import pygame, sys, random, time
 from pygame.locals import *
 import pygame.event
 import  pygame.time
@@ -21,7 +21,7 @@ class Joueur:
         pygame.draw.rect(ecran,self.couleur,(self.x,self.y,self.largeur,self.hauteur))
 
     def deplacer(self):
-                
+        testCouleurX,testCouleurY=0,0        
         #debug      
         #print("avant déplacement : x={} y={}".format(self.x,self.y))
         
@@ -31,19 +31,21 @@ class Joueur:
         #debug
         #print("avant check color : x={} y={}".format(self.x,self.y))
     
-        #avant de vérifier couleur en-dessous du joueur, vérifier que l'on n'a pas atteint le fond de l'écran
-        if self.y+self.hauteur<hauteurEcran:
-            
-            if (ecran.get_at((self.x,self.y+self.hauteur))==(0,0,0,255) and ecran.get_at((self.x+self.largeur,self.y+self.hauteur))==(0,0,0,255)):
-                self.tombe=True
-            else :
-                self.tombe=False
-                #se positionner sur le dessus de la platteforme
-                try:
-                    while (ecran.get_at((self.x,self.y+self.hauteur-1))==couleurPlatteforme or ecran.get_at((self.x+self.largeur-1,self.y+self.hauteur-1))==couleurPlatteforme):
-                        self.y=self.y-1
-                except IndexError:
-                    print("{},{}".format(self.x,self.y))
+        #On réduit d'un pixel pour éviter de tester en dehors de l'écran
+        testCouleurX=self.x+self.largeur-1
+        testCouleurY=self.y+self.hauteur-1
+        
+        if (ecran.get_at((self.x,testCouleurY))==(0,0,0,255) and ecran.get_at((testCouleurX,testCouleurY))==(0,0,0,255)):
+            self.tombe=True
+        else :
+            self.tombe=False
+            #se positionner sur le dessus de la platteforme
+            try:
+                while (ecran.get_at((self.x,testCouleurY))==couleurPlatteforme or ecran.get_at((testCouleurX,testCouleurY))==couleurPlatteforme):
+                    self.y=self.y-1
+                    testCouleurY=self.y+self.hauteur-1
+            except IndexError:
+                print("{},{}".format(self.x,self.y))
                        
         
         
@@ -57,7 +59,7 @@ class Joueur:
         
         #si on sort de l'écran, on met fin au jeu
         if self.y<0:
-            moteur.gameover()
+            self.moteur.gameover()
             
         if self.y+self.hauteur > hauteurEcran:
             self.y=hauteurEcran-self.hauteur
@@ -78,7 +80,7 @@ class Joueur:
 class Platteforme:
     #variables de classe
     dernierePlatteformeA=0
-    delaiPlatteforme=5
+    delaiPlatteforme=1000
     
     def __init__(self,x,y,vitesse,couleur,moteur):
         self.vitesse=vitesse
@@ -119,8 +121,7 @@ class MoteurJeu:
         self.platteformes=[]
         self.continuerJeu=True
         self.demarrageA=0
-        self.derniereMAJEcranA=0
-        self.dernierePlatteformeA=0
+        self.dernierTickA=0
 
         
     def initialisation_jeu(self):
@@ -129,10 +130,9 @@ class MoteurJeu:
         platteforme=Platteforme(vitesse=2,x=0,y=int(hauteurEcran*2/3),couleur=couleurPlatteforme,moteur=self)
         self.platteformes.append(platteforme)
         self.demarrageA=pygame.time.get_ticks()
-        self.dernierePlatteformeA=pygame.time.get_ticks()    
+        self.dernierTickA=self.demarrageA
         self.clock=pygame.time.Clock()
-        self.tempsPasse=0
-           
+        self.maintenant=0  
 
 
     def quitterJeu(self):
@@ -141,9 +141,27 @@ class MoteurJeu:
 
     def gameover(self):
         self.continuerJeu=False
+        
+    def menu_demarrage(self):
+        count=500
+        clock=pygame.time.Clock()
+        font=pygame.font.SysFont("arialblack",25)
+        text=font.render("Just drop ! appuyez sur ESPACE pour commencer",True,(0,255,0))
+       
+        
+        while(count>0):
+            ecran.fill((0,0,0))
+            ecran.blit(text,((largeurEcran-text.get_width())//2,(hauteurEcran-text.get_height())//2))
+            pygame.display.update()
+            clock.tick(50)
+            count-=1
+        
+        
 
 
     def boucle_principale(self):
+        
+        self.menu_demarrage()
 
         while self.continuerJeu:
                 
@@ -200,10 +218,23 @@ class MoteurJeu:
             
             #to do : control fps       
             self.tempsPasse=self.clock.tick(60)
+            self.maintenant=pygame.time.get_ticks()
+            if self.maintenant-Platteforme.dernierePlatteformeA>Platteforme.delaiPlatteforme:
+                #créer nouvelle platteforme
+                print("tick création platteforme: {}".format(self.maintenant))
+            
+                platteforme=Platteforme(vitesse=2,x=0,y=hauteurEcran+50,couleur=couleurPlatteforme,moteur=self)
+                self.platteformes.append(platteforme)
+                Platteforme.dernierPlatteformeA=self.maintenant
+                
             
             pygame.display.update()
 
-
+        #gameover
+        print("gameover")
+        pygame.quit()
+        sys.exit()
+    
 
 #démarrage du module
 

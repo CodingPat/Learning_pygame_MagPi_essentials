@@ -28,14 +28,22 @@ class Joueur:
         #vérifier si sur une platteforme, sinon tombe
         
         
+           
+        #On vérifie les coordonnées du pixel à tester pour éviter de sortir de l'écran
+        testCouleurDroiteX=self.x+self.largeur
+        if testCouleurDroiteX==largeurEcran:
+            testCouleurDroiteX=largeurEcran-1
+        testCouleurGaucheX=self.x
+        if testCouleurGaucheX<0:
+            testCouleurGaucheX=0
+        testCouleurY=self.y+self.hauteur
+        if testCouleurY==hauteurEcran:
+            testCouleurY=hauteurEcran-1
+        elif testCouleurY<0:
+            testCouleurY=0
         #debug
-        #print("avant check color : x={} y={}".format(self.x,self.y))
-    
-        #On réduit d'un pixel pour éviter de tester en dehors de l'écran
-        testCouleurX=self.x+self.largeur-1
-        testCouleurY=self.y+self.hauteur-1
-        
-        if (ecran.get_at((self.x,testCouleurY))==(0,0,0,255) and ecran.get_at((testCouleurX,testCouleurY))==(0,0,0,255)):
+        #print("testgauchex:{} testdroitex : {} testy: {}".format(testCouleurGaucheX,testCouleurDroiteX,testCouleurY))      
+        if (ecran.get_at((testCouleurGaucheX,testCouleurY))==(0,0,0,255) and ecran.get_at((testCouleurDroiteX,testCouleurY))==(0,0,0,255)):
             self.tombe=True
         else :
             self.tombe=False
@@ -59,7 +67,9 @@ class Joueur:
         
         #si on sort de l'écran, on met fin au jeu
         if self.y<0:
-            self.moteur.gameover()
+            self.continuerJeu=False
+            self.jeuDemarre=False
+            self.gameover=True
             
         if self.y+self.hauteur > hauteurEcran:
             self.y=hauteurEcran-self.hauteur
@@ -122,6 +132,8 @@ class MoteurJeu:
         self.continuerJeu=True
         self.demarrageA=0
         self.dernierTickA=0
+        self.jeuDemarre=False
+        self.gameover=False
 
         
     def initialisation_jeu(self):
@@ -139,7 +151,7 @@ class MoteurJeu:
         pygame.quit()
         sys.exit()
 
-    def gameover(self):
+    def menu_gameover(self):
         self.continuerJeu=False
         
     def menu_demarrage(self):
@@ -156,13 +168,7 @@ class MoteurJeu:
             clock.tick(50)
             count-=1
         
-        
-
-
-    def boucle_principale(self):
-        
-        self.menu_demarrage()
-
+    def demarrer_jeu(self):
         while self.continuerJeu:
                 
             ecran.fill((0,0,0))
@@ -221,7 +227,7 @@ class MoteurJeu:
             self.maintenant=pygame.time.get_ticks()
             if self.maintenant-Platteforme.dernierePlatteformeA>Platteforme.delaiPlatteforme:
                 #créer nouvelle platteforme
-                print("tick création platteforme: {}".format(self.maintenant))
+                #print("tick création platteforme: {}".format(self.maintenant))
             
                 platteforme=Platteforme(vitesse=2,x=0,y=hauteurEcran+50,couleur=couleurPlatteforme,moteur=self)
                 self.platteformes.append(platteforme)
@@ -230,6 +236,17 @@ class MoteurJeu:
             
             pygame.display.update()
 
+
+
+    def boucle_principale(self):
+        
+        if self.jeuDemarre:
+            self.demarrer_jeu()
+        elif self.gameover:
+            self.menu_gameover()
+        else:
+            self.menu_demarrage()
+        
         #gameover
         print("gameover")
         pygame.quit()

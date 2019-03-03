@@ -67,10 +67,8 @@ class Joueur:
         
         #si on sort de l'écran, on met fin au jeu
         if self.y<0:
-            self.continuerJeu=False
-            self.jeuDemarre=False
-            self.gameover=True
-            
+            return 0 #gameover
+        
         if self.y+self.hauteur > hauteurEcran:
             self.y=hauteurEcran-self.hauteur
             self.tombe=False
@@ -81,10 +79,9 @@ class Joueur:
         elif self.x <0:
             self.x=0
 
-                                    
+        return 1 #game is not over, go on ...                  
         
-        #debug                          
-        #print("après déplacement : x={} y={}".format(self.x,self.y))
+        
 
 
 class Platteforme:
@@ -100,7 +97,8 @@ class Platteforme:
         self.hauteur=10
         self.positionTrou=0
         self.moteur=moteur
-        self.creer_platteforme()
+        self.creer_trou()
+        Platteforme.dernierePlatteformeA=pygame.time.get_ticks()
         
 
                
@@ -113,11 +111,14 @@ class Platteforme:
         pygame.draw.rect(ecran,(0,0,0),(self.positionTrou,\
             self.y,40,self.hauteur))
 
-    def creer_platteforme(self):
+    def creer_trou(self):
                        
         self.positionTrou=random.randint(0,hauteurEcran-40)
 
-        Platteforme.dernierePlatteformeA=pygame.time.get_ticks()
+        
+        
+    def deplacer(self):
+        pass
 
 
 
@@ -129,7 +130,6 @@ class MoteurJeu:
         #self.ecran=None
         self.joueur=None
         self.platteformes=[]
-        self.continuerJeu=True
         self.demarrageA=0
         self.dernierTickA=0
         self.jeuDemarre=False
@@ -139,6 +139,7 @@ class MoteurJeu:
     def initialisation_jeu(self):
         self.joueur=Joueur(x=int(largeurEcran/2),y=int(hauteurEcran/2),dx=5,dy=5,\
                      largeur=25,hauteur=40,couleur=(255,0,0),moteur=self,tombe=False)
+        self.platteformes.clear()
         platteforme=Platteforme(vitesse=2,x=0,y=int(hauteurEcran*2/3),couleur=couleurPlatteforme,moteur=self)
         self.platteformes.append(platteforme)
         self.demarrageA=pygame.time.get_ticks()
@@ -152,28 +153,99 @@ class MoteurJeu:
         sys.exit()
 
     def menu_gameover(self):
-        self.continuerJeu=False
+        font=pygame.font.SysFont("arialblack",25)
+        text=font.render("Gameover! <ESPACE> pour continuer",True,(255,0,0))
+        
+        ecran.fill((0,0,0))
+        ecran.blit(text,((largeurEcran-text.get_width())//2,(hauteurEcran-text.get_height())//2))
+        pygame.display.update()
+
+        while True:
+            for event in pygame.event.get():
+                if event.type==pygame.KEYDOWN:
+                    if event.key==pygame.K_SPACE:
+                        return
+                        
+                    if event.key==pygame.K_ESCAPE:
+                        self.quitterJeu()
+                       
+                if event.type==pygame.QUIT:
+                    self.quitterJeu()
         
     def menu_demarrage(self):
-        count=500
-        clock=pygame.time.Clock()
         font=pygame.font.SysFont("arialblack",25)
-        text=font.render("Just drop ! appuyez sur ESPACE pour commencer",True,(0,255,0))
-       
+        text=font.render("Just drop ! <ESPACE> pour commencer",True,(0,255,0))
         
-        while(count>0):
-            ecran.fill((0,0,0))
-            ecran.blit(text,((largeurEcran-text.get_width())//2,(hauteurEcran-text.get_height())//2))
-            pygame.display.update()
-            clock.tick(50)
-            count-=1
-        
-    def demarrer_jeu(self):
-        while self.continuerJeu:
+        ecran.fill((0,0,0))
+        ecran.blit(text,((largeurEcran-text.get_width())//2,(hauteurEcran-text.get_height())//2))
+        pygame.display.update()
+
+        while True:
+            for event in pygame.event.get():
+                if event.type==pygame.KEYDOWN:
+                    if event.key==pygame.K_SPACE:
+                        self.jeuDemarre=True
+                        return
+                        
+                    if event.key==pygame.K_ESCAPE:
+                        self.quitterJeu()
+                       
+                if event.type==pygame.QUIT:
+                    self.quitterJeu()
+                   
+            
+    def verifier_ajout_platteforme(self):                        
+            
+        self.maintenant=pygame.time.get_ticks()
+        if self.maintenant-Platteforme.dernierePlatteformeA>Platteforme.delaiPlatteforme:
+            #créer nouvelle platteforme
+            #print("tick création platteforme: {}".format(self.maintenant))
+            
+            platteforme=Platteforme(vitesse=2,x=0,y=hauteurEcran+50,couleur=couleurPlatteforme,moteur=self)
+            self.platteformes.append(platteforme)
+                 
+    def deplacer_platteformes(self):
+        for idx,platteforme in enumerate(self.platteformes):
+            platteforme.y-=platteforme.vitesse
+            if platteforme.y<-10:
+                self.platteformes.pop(idx)
                 
-            ecran.fill((0,0,0))
+    def dessiner_platteformes(self):
+        for platteforme in self.platteformes:
+            platteforme.dessiner()
+        
             
 
+
+    def boucle_principale(self):
+        self.initialisation_jeu()        
+        
+        while True:
+            ecran.fill((0,0,0))
+        
+            if self.jeuDemarre:
+                self.verifier_ajout_platteforme()
+                self.deplacer_platteformes()
+                self.dessiner_platteformes()
+                #dessiner platteformes avant déplacer joueur car test couleur pixel en-dessous du joueur
+                self.gameover=not(self.joueur.deplacer())
+                if self.gameover:
+                    self.jeuDemarre=False
+                self.joueur.dessiner()
+            elif self.gameover:
+                self.jeuDemarre=False
+                self.menu_gameover()
+                self.gameover=False
+                
+            else:
+                self.menu_demarrage()
+                self.jeuDemarre=True
+                self.initialisation_jeu()
+                
+                        
+            pygame.display.update()
+        
+            #test touches
             for event in pygame.event.get():
             
                 if event.type==pygame.KEYDOWN:
@@ -184,7 +256,7 @@ class MoteurJeu:
                         self.joueur.direction=1
                         #print('déplacement droite')
                     if event.key==pygame.K_ESCAPE:
-                        quitterJeu()
+                        self.quitterJeu()
 
                 if event.type==pygame.KEYUP:
                     if event.key==pygame.K_LEFT:
@@ -197,64 +269,12 @@ class MoteurJeu:
                 if event.type==pygame.QUIT:
                     self.quitterJeu()
 
-
-                   
-            #gérer platteformes
-            
-            #déplacer platteformes
-            for idx,platteforme in enumerate(self.platteformes):
-                platteforme.y-=platteforme.vitesse
-                if platteforme.y<-10:
-                    self.platteformes.pop(idx)
-                
-            for platteforme in self.platteformes:
-                platteforme.dessiner()
-            
-            #gérer joueur APRES platteformes (ne traverse pas platteforme sur base couleur)
-            self.joueur.deplacer()
-            self.joueur.dessiner()
-                
-            
-            
-            
-            '''
-            #to do : création de nouvelles platteformes en fonction du temps écoulé
-            '''
-            
-            
-            #to do : control fps       
+            #control fps       
             self.tempsPasse=self.clock.tick(60)
-            self.maintenant=pygame.time.get_ticks()
-            if self.maintenant-Platteforme.dernierePlatteformeA>Platteforme.delaiPlatteforme:
-                #créer nouvelle platteforme
-                #print("tick création platteforme: {}".format(self.maintenant))
-            
-                platteforme=Platteforme(vitesse=2,x=0,y=hauteurEcran+50,couleur=couleurPlatteforme,moteur=self)
-                self.platteformes.append(platteforme)
-                Platteforme.dernierPlatteformeA=self.maintenant
-                
-            
-            pygame.display.update()
 
 
-
-    def boucle_principale(self):
-        
-        if self.jeuDemarre:
-            self.demarrer_jeu()
-        elif self.gameover:
-            self.menu_gameover()
-        else:
-            self.menu_demarrage()
-        
-        #gameover
-        print("gameover")
-        pygame.quit()
-        sys.exit()
-    
 
 #démarrage du module
-
 if __name__=="__main__":
     
     largeurEcran=800
@@ -267,7 +287,6 @@ if __name__=="__main__":
     pygame.display.set_caption("Justdrop !")
     
     monMoteurJeu=MoteurJeu()        
-    monMoteurJeu.initialisation_jeu()
     monMoteurJeu.boucle_principale()
 
 
